@@ -19,15 +19,19 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore audio_manager/audio_manager.csproj
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build audio_manager/audio_manager.csproj --configuration Release --no-restore
 
-    - name: Publish to audio_manager folder
+    - name: Publish to audio_manager_output folder
       run: |
-        if (Test-Path ./audio_manager) { Remove-Item -Recurse -Force ./audio_manager }
-        dotnet publish --configuration Release --no-build --output ./audio_manager
+        if (Test-Path ./audio_manager_output) { Remove-Item -Recurse -Force ./audio_manager_output }
+        dotnet publish audio_manager/audio_manager.csproj --configuration Release --no-build --output ./audio_manager_output
+
+    - name: Rename audio_manager_output to audio_manager
+      run: |
+        if (Test-Path ./audio_manager_output) { Move-Item -Force ./audio_manager_output ./audio_manager }
 
     - name: Zip the audio_manager folder
       run: |
