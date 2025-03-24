@@ -152,12 +152,11 @@ namespace audio_manager
 
             Server.PrintToConsole($"Prompting {player.PlayerName} to set in-game volume to {volume}, preserving voice_scale {currentVoiceScale}");
 
-            // Send commands to player's console instead of direct execution
-            player.PrintToConsole($"volume {volume}; voice_scale {currentVoiceScale}");
-
-            player.PrintToChat($" \x06[Audio Manager] To set In-Game Volume to {(volume * 100)}% (voice chat unchanged):");
-            player.PrintToChat(" \x0A1. Open console (~)");
-            player.PrintToChat(" \x0A2. Press Enter to apply the settings");
+            // Show the command in chat for the player to copy
+            string command = $"volume {volume}; voice_scale {currentVoiceScale}";
+            player.PrintToChat($" \x06[Audio Manager] Set In-Game Volume to {(volume * 100)}%:");
+            player.PrintToChat($" \x0AOpen console (~) and paste: {command}");
+            player.PrintToChat(" \x0APress Enter to apply.");
         }
 
         private void SetPlayerVoiceVolume(CCSPlayerController player, float volume)
