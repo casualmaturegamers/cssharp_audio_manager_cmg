@@ -20,7 +20,6 @@ namespace audio_manager
         }
 
         private Dictionary<ulong, MenuState> _playerMenuStates = new Dictionary<ulong, MenuState>();
-        // Store each player's last known voice_scale to preserve it when adjusting in-game volume
         private Dictionary<ulong, float> _playerVoiceVolumes = new Dictionary<ulong, float>();
 
         public override void Load(bool hotReload)
@@ -126,19 +125,15 @@ namespace audio_manager
             {
                 case "css_1":
                     setVolume(player, 0.1f);
-                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 10%!");
                     break;
                 case "css_2":
                     setVolume(player, 0.5f);
-                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 50%!");
                     break;
                 case "css_3":
                     setVolume(player, 0.75f);
-                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 75%!");
                     break;
                 case "css_4":
                     setVolume(player, 1.0f);
-                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 100%!");
                     break;
                 case "css_9":
                     _playerMenuStates[steamId] = MenuState.MainMenu;
@@ -153,20 +148,23 @@ namespace audio_manager
         private void SetInGameVolume(CCSPlayerController player, float volume)
         {
             ulong steamId = player.SteamID;
-            // Default voice_scale to 1.0 if not previously set
             float currentVoiceScale = _playerVoiceVolumes.ContainsKey(steamId) ? _playerVoiceVolumes[steamId] : 1.0f;
 
-            // Set master volume (affects all sounds)
-            player.ExecuteClientCommand($"volume {volume}");
-            // Immediately restore voice_scale to its previous value to exclude it from the change
-            player.ExecuteClientCommand($"voice_scale {currentVoiceScale}");
+            Server.PrintToConsole($"Prompting {player.PlayerName} to set in-game volume to {volume}, preserving voice_scale {currentVoiceScale}");
+
+            // Send commands to player's console instead of direct execution
+            player.PrintToConsole($"volume {volume}; voice_scale {currentVoiceScale}");
+
+            player.PrintToChat($" \x06[Audio Manager] To set In-Game Volume to {(volume * 100)}% (voice chat unchanged):");
+            player.PrintToChat(" \x0A1. Open console (~)");
+            player.PrintToChat(" \x0A2. Press Enter to apply the settings");
         }
 
         private void SetPlayerVoiceVolume(CCSPlayerController player, float volume)
         {
-            // Set only voice chat volume and store it
             player.ExecuteClientCommand($"voice_scale {volume}");
             _playerVoiceVolumes[player.SteamID] = volume;
+            player.PrintToChat($" \x06[Audio Manager] Player Voice Volume set to {(volume * 100)}%!");
         }
     }
 }
