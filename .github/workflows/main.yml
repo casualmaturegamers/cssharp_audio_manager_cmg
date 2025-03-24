@@ -1,0 +1,61 @@
+name: Build and Release for Windows
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on tags like v1.0.0, v1.2.3, etc.
+
+jobs:
+  build:
+    runs-on: windows-latest # Use Windows runner
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' # Use .NET 8.0 (matches your 8.0.407)
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Publish to audio_manager folder
+      run: |
+        mkdir audio_manager
+        dotnet publish --configuration Release --no-build --output ./audio_manager
+
+    - name: Zip the audio_manager folder
+      run: |
+        powershell -Command "Compress-Archive -Path ./audio_manager -DestinationPath ./audio_manager.zip"
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Provided by GitHub
+      with:
+        tag_name: ${{ github.ref_name }} # e.g., v1.0.0
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        body: |
+          Audio Manager Plugin for Windows
+          - Built with .NET 8.0
+          - Compatible with CounterStrikeSharp
+          - Server-side volume control
+          - Extract the audio_manager folder and place it in csgo/addons/counterstrikesharp/plugins/
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./audio_manager.zip
+        asset_name: audio_manager.zip
+        asset_content_type: application/zip
