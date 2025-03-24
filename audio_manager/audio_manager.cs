@@ -148,12 +148,11 @@ namespace audio_manager
         private void SetInGameVolume(CCSPlayerController player, float volume)
         {
             ulong steamId = player.SteamID;
-            float currentVoiceScale = _playerVoiceVolumes.ContainsKey(steamId) ? _playerVoiceVolumes[steamId] : 1.0f;
+            float currentVoiceVolume = _playerVoiceVolumes.ContainsKey(steamId) ? _playerVoiceVolumes[steamId] : 1.0f;
 
-            Server.PrintToConsole($"Prompting {player.PlayerName} to set in-game volume to {volume}, preserving voice_scale {currentVoiceScale}");
+            Server.PrintToConsole($"Prompting {player.PlayerName} to set in-game volume to {volume}, preserving snd_voipvolume {currentVoiceVolume}");
 
-            // Show the command in chat for the player to copy
-            string command = $"volume {volume}; voice_scale {currentVoiceScale}";
+            string command = $"volume {volume}; snd_voipvolume {currentVoiceVolume}";
             player.PrintToChat($" \x06[Audio Manager] Set In-Game Volume to {(volume * 100)}%:");
             player.PrintToChat($" \x0AOpen console (~) and paste: {command}");
             player.PrintToChat(" \x0APress Enter to apply.");
@@ -161,9 +160,13 @@ namespace audio_manager
 
         private void SetPlayerVoiceVolume(CCSPlayerController player, float volume)
         {
-            player.ExecuteClientCommand($"voice_scale {volume}");
-            _playerVoiceVolumes[player.SteamID] = volume;
-            player.PrintToChat($" \x06[Audio Manager] Player Voice Volume set to {(volume * 100)}%!");
+            Server.PrintToConsole($"Prompting {player.PlayerName} to set snd_voipvolume to {volume}");
+
+            string command = $"snd_voipvolume {volume}";
+            player.PrintToChat($" \x06[Audio Manager] Set Player Voice Volume to {(volume * 100)}%:");
+            player.PrintToChat($" \x0AOpen console (~) and paste: {command}");
+            player.PrintToChat(" \x0APress Enter to apply.");
+            _playerVoiceVolumes[player.SteamID] = volume; // Still track it for In-Game Volume preservation
         }
     }
 }
