@@ -1,0 +1,72 @@
+# Build output directories and files
+audio_manager/bin/
+audio_manager/obj/
+audio_manager/out/
+
+# .NET build artifacts
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.dll.config
+*.exe.config
+*.cache
+*.deps.json
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+
+# NuGet packages and caches
+*.nupkg
+/packages/
+*.nuget.props
+*.nuget.targets
+.nuget/
+nuget.config
+NuGet.Config
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+
+# Visual Studio Code specific
+.vscode/
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# C# Dev Kit / OmniSharp / Roslyn
+/.omnisharp/
+/.roslyn/
+
+# Dependency lock files (optional, include if you don't want to commit them)
+*.lock.json
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# Environment-specific files
+appsettings.json
+appsettings.*.json
+secrets.json
+*.env
+
+# Test-related files (optional, adjust based on your needs)
+/TestResults/
+*.trx
+*.coverage
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Sensitive data
+*.p12
+*.pfx
+*.key
+*.pem
