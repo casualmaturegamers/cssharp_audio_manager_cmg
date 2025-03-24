@@ -11,61 +11,162 @@ namespace audio_manager
         public override string ModuleAuthor => "Andrew Mathews";
         public override string ModuleDescription => "Allows the player to control in game audio levels.";
 
+        private enum MenuState
+        {
+            None,
+            MainMenu,
+            InGameVolume,
+            PlayerVoiceVolume
+        }
+
+        private Dictionary<ulong, MenuState> _playerMenuStates = new Dictionary<ulong, MenuState>();
+        // Store each player's last known voice_scale to preserve it when adjusting in-game volume
+        private Dictionary<ulong, float> _playerVoiceVolumes = new Dictionary<ulong, float>();
+
         public override void Load(bool hotReload)
         {
-            // Register the chat command !audiomanager
             AddCommand("css_audiomanager", "Opens the audio manager menu", OnAudioManagerCommand);
-            // Register menu selection commands
+            AddCommand("css_am", "Shortcut to open the audio manager menu", OnAudioManagerCommand);
             AddCommand("css_1", "Menu option 1", OnMenuSelection);
             AddCommand("css_2", "Menu option 2", OnMenuSelection);
             AddCommand("css_3", "Menu option 3", OnMenuSelection);
-            AddCommand("css_9", "Exit menu", OnMenuSelection);
+            AddCommand("css_4", "Menu option 4", OnMenuSelection);
+            AddCommand("css_9", "Exit or back", OnMenuSelection);
         }
 
         private void OnAudioManagerCommand(CCSPlayerController? player, CommandInfo command)
         {
-            if (player == null || !player.IsValid) return;
+            if (player == null || !player.IsValid || player.Connected != PlayerConnectedState.PlayerConnected)
+            {
+                return;
+            }
 
-            // Display the menu to the player
+            _playerMenuStates[player.SteamID] = MenuState.MainMenu;
+            ShowMainMenu(player);
+        }
+
+        private void ShowMainMenu(CCSPlayerController player)
+        {
             player.PrintToChat(" \x0BAudio Manager Menu:");
-            player.PrintToChat(" \x0A!1 - Play Hello Sound");
-            player.PrintToChat(" \x0A!2 - Play Goodbye Sound");
-            player.PrintToChat(" \x0A!3 - Stop All Sounds");
-            player.PrintToChat(" \x0A!9 - Exit Menu");
+            player.PrintToChat(" \x0A!1 - In-Game Volume (excludes voice chat)");
+            player.PrintToChat(" \x0A!2 - Player Voice Volume");
+            player.PrintToChat(" \x0A!9 - Exit");
+            player.PrintToChat("Type the command to select an option!");
+        }
+
+        private void ShowVolumeMenu(CCSPlayerController player, string menuTitle)
+        {
+            player.PrintToChat($" \x0B{menuTitle}:");
+            player.PrintToChat(" \x0A!1 - Volume 10%");
+            player.PrintToChat(" \x0A!2 - Volume 50%");
+            player.PrintToChat(" \x0A!3 - Volume 75%");
+            player.PrintToChat(" \x0A!4 - Volume 100%");
+            player.PrintToChat(" \x0A!9 - Back to Main Menu");
             player.PrintToChat("Type the command to select an option!");
         }
 
         private void OnMenuSelection(CCSPlayerController? player, CommandInfo command)
         {
-            if (player == null || !player.IsValid) return;
+            if (player == null || !player.IsValid || player.Connected != PlayerConnectedState.PlayerConnected)
+            {
+                return;
+            }
+
+            ulong steamId = player.SteamID;
+            if (!_playerMenuStates.ContainsKey(steamId) || _playerMenuStates[steamId] == MenuState.None)
+            {
+                player.PrintToChat(" \x04[Audio Manager] Please open the menu first with !audiomanager or !am!");
+                return;
+            }
 
             string commandName = command.GetCommandString;
+            MenuState currentState = _playerMenuStates[steamId];
 
+            switch (currentState)
+            {
+                case MenuState.MainMenu:
+                    HandleMainMenu(player, commandName);
+                    break;
+                case MenuState.InGameVolume:
+                    HandleVolumeMenu(player, commandName, "In-Game Volume", SetInGameVolume);
+                    break;
+                case MenuState.PlayerVoiceVolume:
+                    HandleVolumeMenu(player, commandName, "Player Voice Volume", SetPlayerVoiceVolume);
+                    break;
+            }
+        }
+
+        private void HandleMainMenu(CCSPlayerController player, string commandName)
+        {
+            ulong steamId = player.SteamID;
             switch (commandName)
             {
                 case "css_1":
-                    player.PrintToChat(" \x06[Audio Manager] Playing Hello World sound!");
-                    // pass
+                    _playerMenuStates[steamId] = MenuState.InGameVolume;
+                    ShowVolumeMenu(player, "In-Game Volume");
                     break;
-
                 case "css_2":
-                    player.PrintToChat(" \x06[Audio Manager] Playing Goodbye sound!");
-                    // pass
+                    _playerMenuStates[steamId] = MenuState.PlayerVoiceVolume;
+                    ShowVolumeMenu(player, "Player Voice Volume");
                     break;
-
-                case "css_3":
-                    player.PrintToChat(" \x06[Audio Manager] Stopping all sounds!");
-                    // pass
-                    break;
-
                 case "css_9":
                     player.PrintToChat(" \x06[Audio Manager] Menu closed!");
+                    _playerMenuStates[steamId] = MenuState.None;
                     break;
-
                 default:
-                    player.PrintToChat(" \x04[Audio Manager] Invalid selection!");
+                    player.PrintToChat(" \x04[Audio Manager] Invalid selection! Use !1, !2, or !9.");
                     break;
             }
+        }
+
+        private void HandleVolumeMenu(CCSPlayerController player, string commandName, string menuTitle, Action<CCSPlayerController, float> setVolume)
+        {
+            ulong steamId = player.SteamID;
+            switch (commandName)
+            {
+                case "css_1":
+                    setVolume(player, 0.1f);
+                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 10%!");
+                    break;
+                case "css_2":
+                    setVolume(player, 0.5f);
+                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 50%!");
+                    break;
+                case "css_3":
+                    setVolume(player, 0.75f);
+                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 75%!");
+                    break;
+                case "css_4":
+                    setVolume(player, 1.0f);
+                    player.PrintToChat($" \x06[Audio Manager] {menuTitle} set to 100%!");
+                    break;
+                case "css_9":
+                    _playerMenuStates[steamId] = MenuState.MainMenu;
+                    ShowMainMenu(player);
+                    break;
+                default:
+                    player.PrintToChat(" \x04[Audio Manager] Invalid selection! Use !1, !2, !3, !4, or !9.");
+                    break;
+            }
+        }
+
+        private void SetInGameVolume(CCSPlayerController player, float volume)
+        {
+            ulong steamId = player.SteamID;
+            // Default voice_scale to 1.0 if not previously set
+            float currentVoiceScale = _playerVoiceVolumes.ContainsKey(steamId) ? _playerVoiceVolumes[steamId] : 1.0f;
+
+            // Set master volume (affects all sounds)
+            player.ExecuteClientCommand($"volume {volume}");
+            // Immediately restore voice_scale to its previous value to exclude it from the change
+            player.ExecuteClientCommand($"voice_scale {currentVoiceScale}");
+        }
+
+        private void SetPlayerVoiceVolume(CCSPlayerController player, float volume)
+        {
+            // Set only voice chat volume and store it
+            player.ExecuteClientCommand($"voice_scale {volume}");
+            _playerVoiceVolumes[player.SteamID] = volume;
         }
     }
 }
